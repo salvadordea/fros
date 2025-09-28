@@ -4,7 +4,7 @@
   "description": "Backend API para Sistema de Control de Bodega de Congelados",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "sh start.sh",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:migrate": "npx prisma migrate dev",
@@ -55,7 +55,8 @@
     "typescript": "^5.0.0",
     "jest": "^29.6.0",
     "@types/jest": "^29.5.0",
-    "ts-jest": "^29.1.0"
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
