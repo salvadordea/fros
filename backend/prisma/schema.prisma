@@ -1,0 +1,251 @@
+// Schema de base de datos para Sistema de Control de Bodega de Congelados
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de usuarios del sistema
+model Usuario {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  nombre        String
+  apellido      String
+  telefono      String?
+  rol           RolUsuario @default(CLIENTE)
+  estado        EstadoUsuario @default(PENDIENTE)
+  password      String
+  invitadoPor   String?
+  fechaRegistro DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  // Relaciones
+  reservas      Reserva[]
+  pagos         Pago[]
+  accesos       RegistroAcceso[]
+  invitador     Usuario? @relation("UsuarioInvitacion", fields: [invitadoPor], references: [id])
+  invitados     Usuario[] @relation("UsuarioInvitacion")
+
+  @@map("usuarios")
+}
+
+// Modelo de espacios de la bodega
+model Espacio {
+  id              String @id @default(uuid())
+  numero          Int    @unique
+  estado          EstadoEspacio @default(LIBRE)
+  temperaturaMin  Float? @default(-18.0)
+  temperaturaMax  Float? @default(-15.0)
+  notas           String?
+  fechaCreacion   DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  // Relaciones
+  reservaEspacios ReservaEspacio[]
+  mantenimientos  Mantenimiento[]
+  inventarios     InventarioCliente[]
+
+  @@map("espacios")
+}
+
+// Modelo de reservas
+model Reserva {
+  id              String @id @default(uuid())
+  clienteId       String
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  estado          EstadoReserva @default(PENDIENTE)
+  precioTotal     Float
+  descuento       Float @default(0)
+  notas           String?
+  codigoAcceso    String? @unique
+  fechaCreacion   DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  // Relaciones
+  cliente         Usuario @relation(fields: [clienteId], references: [id])
+  espacios        ReservaEspacio[]
+  pagos           Pago[]
+  accesos         RegistroAcceso[]
+
+  @@map("reservas")
+}
+
+// Tabla intermedia para relación many-to-many entre Reserva y Espacio
+model ReservaEspacio {
+  reservaId       String
+  espacioId       String
+  fechaAsignacion DateTime @default(now())
+
+  // Relaciones
+  reserva         Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  espacio         Espacio @relation(fields: [espacioId], references: [id])
+
+  @@id([reservaId, espacioId])
+  @@map("reserva_espacios")
+}
+
+// Modelo de pagos
+model Pago {
+  id              String @id @default(uuid())
+  reservaId       String
+  clienteId       String
+  monto           Float
+  metodoPago      MetodoPago
+  estado          EstadoPago @default(PENDIENTE)
+  referencia      String?
+  fechaPago       DateTime?
+  fechaVencimiento DateTime?
+  fechaCreacion   DateTime @default(now())
+
+  // Relaciones
+  reserva         Reserva @relation(fields: [reservaId], references: [id])
+  cliente         Usuario @relation(fields: [clienteId], references: [id])
+
+  @@map("pagos")
+}
+
+// Modelo de configuración del sistema
+model Configuracion {
+  clave           String @id
+  valor           String
+  descripcion     String?
+  tipo            TipoConfiguracion @default(TEXTO)
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("configuracion")
+}
+
+// Modelo de mantenimiento de espacios
+model Mantenimiento {
+  id              String @id @default(uuid())
+  espacioId       String
+  tipo            TipoMantenimiento
+  descripcion     String
+  fechaInicio     DateTime
+  fechaFin        DateTime?
+  estado          EstadoMantenimiento @default(PROGRAMADO)
+  responsable     String?
+  notas           String?
+  fechaCreacion   DateTime @default(now())
+
+  // Relaciones
+  espacio         Espacio @relation(fields: [espacioId], references: [id])
+
+  @@map("mantenimientos")
+}
+
+// Modelo de inventario del cliente
+model InventarioCliente {
+  id              String @id @default(uuid())
+  espacioId       String
+  clienteId       String
+  producto        String
+  cantidad        Float
+  unidadMedida    String
+  fechaVencimiento DateTime?
+  temperaturaRequerida Float?
+  notas           String?
+  fechaCreacion   DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  // Relaciones
+  espacio         Espacio @relation(fields: [espacioId], references: [id])
+
+  @@map("inventario_clientes")
+}
+
+// Modelo de registro de accesos
+model RegistroAcceso {
+  id              String @id @default(uuid())
+  usuarioId       String
+  reservaId       String?
+  tipoAcceso      TipoAcceso
+  fechaHora       DateTime @default(now())
+  exitoso         Boolean @default(true)
+  direccionIP     String?
+  userAgent       String?
+  notas           String?
+
+  // Relaciones
+  usuario         Usuario @relation(fields: [usuarioId], references: [id])
+  reserva         Reserva? @relation(fields: [reservaId], references: [id])
+
+  @@map("registro_accesos")
+}
+
+// Enums
+enum RolUsuario {
+  ADMIN
+  OPERADOR
+  CLIENTE
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+  PENDIENTE
+  SUSPENDIDO
+}
+
+enum EstadoEspacio {
+  LIBRE
+  RESERVADO
+  OCUPADO
+  MANTENIMIENTO
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  ACTIVA
+  COMPLETADA
+  CANCELADA
+  VENCIDA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+  VENCIDO
+  REEMBOLSADO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA_CREDITO
+  TARJETA_DEBITO
+  CHEQUE
+}
+
+enum TipoConfiguracion {
+  TEXTO
+  NUMERO
+  BOOLEANO
+  JSON
+}
+
+enum TipoMantenimiento {
+  PREVENTIVO
+  CORRECTIVO
+  EMERGENCIA
+  LIMPIEZA
+}
+
+enum EstadoMantenimiento {
+  PROGRAMADO
+  EN_PROGRESO
+  COMPLETADO
+  CANCELADO
+}
+
+enum TipoAcceso {
+  WEB_LOGIN
+  FISICO_QR
+  API
+  ADMIN_PANEL
+}

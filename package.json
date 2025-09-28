@@ -1,0 +1,42 @@
+{
+  "name": "fros-bodega-congelados",
+  "version": "1.0.0",
+  "description": "Sistema de Control de Bodega de Congelados",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
+    "dev:backend": "cd backend && pnpm dev",
+    "dev:frontend": "cd frontend && pnpm dev",
+    "build": "pnpm build:backend && pnpm build:frontend",
+    "build:backend": "cd backend && pnpm build",
+    "build:frontend": "cd frontend && pnpm build",
+    "install:all": "pnpm install && cd backend && pnpm install && cd ../frontend && pnpm install",
+    "db:migrate": "cd backend && npx prisma migrate dev",
+    "db:studio": "cd backend && npx prisma studio",
+    "db:seed": "cd backend && npx prisma db seed",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "echo \"Tests will be implemented\" && exit 0"
+  },
+  "keywords": [
+    "bodega",
+    "congelados",
+    "reservas",
+    "warehouse",
+    "management"
+  ],
+  "author": "FROS Team",
+  "license": "MIT",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.45.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: fros_postgres
+    environment:
+      POSTGRES_DB: fros_db
+      POSTGRES_USER: fros_user
+      POSTGRES_PASSWORD: fros_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - fros_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: fros_backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://fros_user:fros_password@postgres:5432/fros_db
+      JWT_SECRET: desarrollo_jwt_secret_muy_seguro_cambiar_en_produccion
+      JWT_EXPIRES_IN: 7d
+      PORT: 3001
+      FRONTEND_URL: http://localhost:5173
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: tu-email@gmail.com
+      SMTP_PASS: tu-password
+      FROM_EMAIL: tu-email@gmail.com
+      FROM_NAME: Sistema FROS
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - fros_network
+    command: npm run dev
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: fros_frontend
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - fros_network
+    command: npm run dev
+
+  # Adminer para gestión de base de datos (opcional)
+  adminer:
+    image: adminer:latest
+    container_name: fros_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - fros_network
+
+volumes:
+  postgres_data:
+
+networks:
+  fros_network:
+    driver: bridge
