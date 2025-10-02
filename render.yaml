@@ -1,0 +1,34 @@
+services:
+  # Backend
+  - type: web
+    name: fros-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    startCommand: cd backend && npx prisma migrate deploy && npx prisma db seed && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fros-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: DEFAULT_SPACES_COUNT
+        value: 100
+      - key: DEFAULT_TEMP_MIN
+        value: -18.0
+      - key: DEFAULT_TEMP_MAX
+        value: -15.0
+
+databases:
+  - name: fros-db
+    plan: free
+    databaseName: fros
+    user: fros
