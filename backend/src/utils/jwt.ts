@@ -8,13 +8,14 @@ interface TokenPayload {
 }
 
 export const generateToken = (payload: TokenPayload): string => {
-  return jwt.sign(
-    payload,
-    process.env.JWT_SECRET!,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-    }
-  );
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+
+  return jwt.sign(payload, secret, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+  });
 };
 
 export const verifyToken = (token: string): TokenPayload => {
